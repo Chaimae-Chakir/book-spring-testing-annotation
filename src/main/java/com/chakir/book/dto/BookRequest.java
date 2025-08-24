@@ -1,4 +1,4 @@
-package com.chakir.book.web.dto;
+package com.chakir.book.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.PastOrPresent;

@@ -1,4 +1,4 @@
-package com.chakir.book.web.dto;
+package com.chakir.book.dto;
 
 import lombok.Builder;
 import lombok.Value;

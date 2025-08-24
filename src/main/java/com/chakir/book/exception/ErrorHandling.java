@@ -1,7 +1,5 @@
-package com.chakir.book.web;
+package com.chakir.book.exception;
 
-import com.chakir.book.exception.DuplicateIsbnException;
-import com.chakir.book.exception.ResourceNotFoundException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
