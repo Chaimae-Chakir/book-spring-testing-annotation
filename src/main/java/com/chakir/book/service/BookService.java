@@ -1,8 +1,11 @@
 package com.chakir.book.service;
 
 import com.chakir.book.entity.Book;
+import com.chakir.book.dto.BookRequest;
+import com.chakir.book.dto.BookResponse;
 import com.chakir.book.exception.DuplicateIsbnException;
 import com.chakir.book.exception.ResourceNotFoundException;
+import com.chakir.book.mapper.BookMapper;
 import com.chakir.book.repository.BookRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,44 +16,56 @@ import java.util.List;
 @Transactional
 public class BookService {
 	private final BookRepository bookRepository;
+	private final BookMapper bookMapper;
 
-	public BookService(BookRepository bookRepository) {
+	public BookService(BookRepository bookRepository, BookMapper bookMapper) {
 		this.bookRepository = bookRepository;
+		this.bookMapper = bookMapper;
 	}
 
-	public Book create(Book book) {
+	public BookResponse create(BookRequest request) {
+		Book book = bookMapper.mapToEntity(request);
 		if (bookRepository.existsByIsbn(book.getIsbn())) {
 			throw new DuplicateIsbnException("ISBN already exists: " + book.getIsbn());
 		}
-		return bookRepository.save(book);
+		Book savedBook = bookRepository.save(book);
+		return bookMapper.mapToResponse(savedBook);
 	}
 
 	@Transactional(readOnly = true)
-	public Book getById(Long id) {
-		return bookRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Book not found: " + id));
+	public BookResponse getById(Long id) {
+		Book book = bookRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Book not found: " + id));
+		return bookMapper.mapToResponse(book);
 	}
 
 	@Transactional(readOnly = true)
-	public List<Book> list() {
-		return bookRepository.findAll();
+	public List<BookResponse> list() {
+		return bookRepository.findAll().stream()
+				.map(bookMapper::mapToResponse)
+				.toList();
 	}
 
-	public Book update(Long id, Book update) {
-		Book existing = getById(id);
+	public BookResponse update(Long id, BookRequest request) {
+		Book existing = bookRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Book not found: " + id));
+		Book update = bookMapper.mapToEntity(request);
+		
 		if (!existing.getIsbn().equals(update.getIsbn()) &&
 				bookRepository.existsByIsbn(update.getIsbn())) {
 			throw new DuplicateIsbnException("ISBN already exists: " + update.getIsbn());
 		}
+		
 		existing.setTitle(update.getTitle());
 		existing.setAuthor(update.getAuthor());
 		existing.setIsbn(update.getIsbn());
 		existing.setPrice(update.getPrice());
 		existing.setPublishedDate(update.getPublishedDate());
-		return existing;
+		
+		Book savedBook = bookRepository.save(existing);
+		return bookMapper.mapToResponse(savedBook);
 	}
 
 	public void delete(Long id) {
-		Book existing = getById(id);
+		Book existing = bookRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Book not found: " + id));
 		bookRepository.delete(existing);
 	}
 }
