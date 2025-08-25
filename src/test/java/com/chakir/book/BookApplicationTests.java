@@ -114,5 +114,14 @@ public class BookApplicationTests {
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.error").value("Book not found: 0"));
     }
+
+    @Test
+    void searchBooks() throws Exception {
+        mockMvc.perform(get("/api/books/search")
+                        .param("author", "Robert C. Martin"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].title").value("Clean Code"))
+                .andExpect(jsonPath("$[0].author").value("Robert C. Martin"));
+    }
 }
 

@@ -37,6 +37,11 @@ public class BookController {
 		return bookService.list();
 	}
 
+	@GetMapping("/search")
+	public List<BookResponse> search(@RequestParam String author) {
+		return bookService.searchByAuthor(author);
+	}
+
 	@PutMapping("/{id}")
 	public BookResponse update(@PathVariable Long id, @Valid @RequestBody BookRequest request) {
 		return bookService.update(id, request);

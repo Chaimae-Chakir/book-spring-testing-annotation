@@ -45,6 +45,13 @@ public class BookService {
 				.toList();
 	}
 
+	@Transactional(readOnly = true)
+	public List<BookResponse> searchByAuthor(String author) {
+		return bookRepository.findAllByAuthor(author).stream()
+				.map(bookMapper::mapToResponse)
+				.toList();
+	}
+
 	public BookResponse update(Long id, BookRequest request) {
 		Book existing = bookRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Book not found: " + id));
 		Book update = bookMapper.mapToEntity(request);
@@ -68,6 +75,8 @@ public class BookService {
 		Book existing = bookRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Book not found: " + id));
 		bookRepository.delete(existing);
 	}
+
+
 }
 
 
