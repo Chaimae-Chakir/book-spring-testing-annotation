@@ -110,6 +110,7 @@ public class BookApplicationTests {
     void deleteNonExistingBookReturnsNotFound() throws Exception {
         assertFalse(bookRepository.findById(0L).isPresent());
         mockMvc.perform(delete("/api/books/{id}",0))
+//                .andExpect(status().is4xxClientError())
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.error").value("Book not found: 0"));
     }
