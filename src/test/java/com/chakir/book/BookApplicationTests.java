@@ -20,6 +20,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import org.junit.jupiter.api.*;
 import org.springframework.transaction.annotation.Transactional;
+import com.chakir.book.dto.BookRequest;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -84,6 +85,33 @@ public class BookApplicationTests {
         assertTrue(bookRepository.findById(testBook.getId()).isPresent());
         mockMvc.perform(delete("/api/books/{id}", testBook.getId()))
                 .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void createBook() throws Exception {
+        BookRequest req = new BookRequest();
+        req.setTitle("Effective Java");
+        req.setAuthor("Joshua Bloch");
+        req.setIsbn("978-0134685991");
+        req.setPrice(new BigDecimal("55.00"));
+        req.setPublishedDate(LocalDate.of(2018, 1, 6));
+
+        mockMvc.perform(post("/api/books")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isCreated())
+                .andExpect(header().string("Location", org.hamcrest.Matchers.matchesPattern("/api/books/\\d+")))
+                .andExpect(jsonPath("$.id").exists())
+                .andExpect(jsonPath("$.title").value("Effective Java"))
+                .andExpect(jsonPath("$.author").value("Joshua Bloch"));
+    }
+
+    @Test
+    void deleteNonExistingBookReturnsNotFound() throws Exception {
+        assertFalse(bookRepository.findById(0L).isPresent());
+        mockMvc.perform(delete("/api/books/{id}",0))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error").value("Book not found: 0"));
     }
 }
 
