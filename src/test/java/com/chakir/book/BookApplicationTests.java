@@ -19,16 +19,17 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Optional;
 
-import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import org.junit.jupiter.api.*;
 
 @SpringBootTest
 @AutoConfigureMockMvc
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @TestPropertySource("/application.properties")
-class BookApplicationTests {
+public class BookApplicationTests {
+
     @Autowired
     private MockMvc mockMvc;
 
@@ -42,15 +43,8 @@ class BookApplicationTests {
     private BookRepository bookRepository;
 
     @Test
-    @Order(2)
-    void getBookById(){
-        Book book = entityManager.find(Book.class, 1L);
-        System.out.println(book);
-    }
-
-    @Test
+    @Order(1)
     @Transactional
-    @Order(value = 1)
     void performGetBookById() throws Exception {
         Book book = new Book();
         book.setTitle("Clean Code");
@@ -61,19 +55,18 @@ class BookApplicationTests {
         entityManager.persist(book);
         entityManager.flush();
 
-        mockMvc.perform(get("/api/books/1")
+        mockMvc.perform(get("/api/books/{id}", book.getId())
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.id").value(1))
                 .andExpect(jsonPath("$.title").value("Clean Code"))
                 .andExpect(jsonPath("$.author").value("Robert C. Martin"));
     }
 
     @Test
+    @Order(2)
     void createBook() throws Exception {
         Book book = new Book();
-        book.setId(2L);
         book.setTitle("Effective Java");
         book.setAuthor("Joshua Bloch");
         book.setIsbn("978-0134685991");
@@ -81,16 +74,36 @@ class BookApplicationTests {
         book.setPublishedDate(LocalDate.of(2018, 1, 6));
 
         mockMvc.perform(post("/api/books")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(book)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(book)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.title").value("Effective Java"))
                 .andExpect(jsonPath("$.author").value("Joshua Bloch"))
                 .andExpect(jsonPath("$.isbn").value("978-0134685991"));
 
         Optional<Book> byIsbn = bookRepository.findByIsbn("978-0134685991");
-        assertTrue(byIsbn.isPresent(),"Book with ISBN 978-0134685991 should exist");
-        Book book1 = byIsbn.get();
-        assertEquals("Joshua Bloch",book1.getAuthor(),"Book title should match");
+        assertTrue(byIsbn.isPresent(), "Book with ISBN 978-0134685991 should exist");
+        assertEquals("Joshua Bloch", byIsbn.get().getAuthor(), "Book author should match");
+    }
+
+    @Test
+    @Order(3)
+    @Transactional
+    void deleteBookById() throws Exception {
+        Book book = new Book();
+        book.setTitle("Design Patterns: Elements of Reusable Object-Oriented Software");
+        book.setAuthor("Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides");
+        book.setIsbn("978-0201633610");
+        book.setPrice(new BigDecimal("49.95"));
+        book.setPublishedDate(LocalDate.of(1994, 10, 31));
+        entityManager.persist(book);
+        entityManager.flush();
+        Long bookId = book.getId();
+
+        assertTrue(bookRepository.findById(bookId).isPresent(), "Book should exist before deletion");
+        mockMvc.perform(delete("/api/books/{id}", bookId))
+                .andExpect(status().isNoContent());
+
+        assertFalse(bookRepository.findById(bookId).isPresent(), "Book should be deleted");
     }
 }
